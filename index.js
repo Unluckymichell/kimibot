@@ -19,6 +19,7 @@ try {
 }
 
 const kimiRegex = /ki+m+i+|i+m+i+|ki+m+/gi;
+const vocalRegex = /[aeiou]/;
 const kimiNames = readFileSync("./kiminames.txt", { encoding: "utf-8" })
   .replace(/\r/g, "")
   .split("\n");
@@ -28,11 +29,8 @@ client.on("ready", async () => {
     (m) => kimify(m)
   );
 });
-
-client.on("guildMemberUpdate", async (_, m) => {
-  kimify(m);
-});
-
+client.on("guildMemberUpdate", async (_, m) => kimify(m));
+client.on("guildMemberAdd", async (_, m) => kimify(m));
 client.login(config.token);
 
 /**
@@ -41,9 +39,20 @@ client.login(config.token);
 function kimify(m) {
   if (m.guild != "445980619483119616") return;
   if (!m.displayName.replace(/\s/g, "").replace(/1/g, "i").match(kimiRegex)) {
-    let nick = kimiNames[randomInt(0, kimiNames.length - 1)];
+    var nick = "";
+    if (randomInt(0, 1) == 0 && m.displayName.match(vocalRegex)) {
+      let vocalFound = false;
+      for (let i = m.displayName.length - 1; i >= 0; i--) {
+        if (!vocalFound && `${m.displayName[i]}`.match(vocalRegex)) {
+          nick = "imi" + nick;
+          vocalFound = true;
+        } else nick = m.displayName[i] + nick;
+      }
+    } else {
+      nick = kimiNames[randomInt(0, kimiNames.length - 1)];
+    }
     console.error(`[${m.displayName}] EDIT: "${nick}"`);
-    //m.edit({ nick });
+    m.edit({ nick });
   } else console.log(`[${m.displayName}] OK`);
 }
 
