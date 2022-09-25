@@ -3,7 +3,12 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const { readFileSync, writeFileSync } = require("fs");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 let config;
@@ -29,8 +34,33 @@ client.on("ready", async () => {
     (m) => kimify(m)
   );
 });
-client.on("guildMemberUpdate", async (_, m) => kimify(m));
-client.on("guildMemberAdd", async (_, m) => kimify(m));
+client.on("guildMemberUpdate", (_, m) => kimify(m));
+client.on("guildMemberAdd", (_, m) => kimify(m));
+client.on("messageCreate", async (m) => {
+  if (
+    m.guild.id == "445980619483119616" &&
+    m.channel.id == "1023605425280659457" &&
+    m.content == "update"
+  ) {
+    console.log("Updating kimiNames");
+    (await m.channel.messages.fetch()).forEach(async (m) => {
+      if (m.member.id == client.user.id) await m.delete();
+      else if (!m.content.startsWith("!noname")) {
+        if (m.content == "update") await m.delete();
+        else if (m.content.match(kimiRegex)) {
+          kimiNames.push(m.content);
+          await m.delete();
+        } else {
+          // React or something
+        }
+      }
+    });
+
+    m.channel.send(kimiNames.join("\n"));
+    writeFileSync("./kiminames.txt", kimiNames.join("\n"), {encoding: "utf-8"} );
+    console.log("Done updating kimiNames");
+  }
+});
 client.login(config.token);
 
 /**
